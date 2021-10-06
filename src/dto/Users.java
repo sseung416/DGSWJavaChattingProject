@@ -4,17 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class Users {
-    private static Users users = null;
-    private Map<String, MySocket> userList = new LinkedHashMap<>();
-
-    private Users() {}
-
-    public static Users getInstance() {
-        if (users == null) {
-            users = new Users();
-        }
-        return users;
-    }
+    private static Map<String, MySocket> userList = new LinkedHashMap<>();
 
     public synchronized Map<String, MySocket> getAllUser() {
         return userList;
@@ -22,6 +12,10 @@ public class Users {
 
     public synchronized MySocket getUser(String key) {
         return userList.get(key);
+    }
+
+    public synchronized MySocket getUser(MySocket socket) {
+        return userList.get(socket);
     }
 
     public synchronized void putUser(String key, MySocket socket) {

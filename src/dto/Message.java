@@ -3,10 +3,10 @@ package dto;
 import java.nio.charset.StandardCharsets;
 
 public class Message {
-    public final static int PORT = 1202;
-    public final static int BUFFER_SIZE = 1024;
+    public final static int PORT = 1214;
+    public final static int BUFFER_SIZE = 2048;
 
-    private final byte[] message;
+    private byte[] message;
 
     public Message(byte[] message) {
         this.message = message;

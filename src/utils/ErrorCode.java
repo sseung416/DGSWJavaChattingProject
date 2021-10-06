@@ -1,4 +1,4 @@
-package test;
+package utils;
 
 public enum ErrorCode {
     PORT_ALREADY_OCCUPIED("이미 사용 중인 port 번호입니다."),

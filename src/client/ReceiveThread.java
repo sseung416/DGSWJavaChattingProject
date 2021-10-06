@@ -2,8 +2,6 @@ package client;
 
 import dto.Message;
 import dto.MySocket;
-import test.ErrorCode;
-import test.TcpServerException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,11 +30,18 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
             while (is.read(buffer) > 0) {
                 message = new Message(buffer);
 
+//                byte[] s = new byte[message.getLength()];
+//                is.read(s, 0, message.getLength());
+//                System.out.println(new String(s, 0, message.getLength()));
+
                 switch (message.getHead()) {
                     case "UR":
                         System.out.println("[ 채팅방에 오신 걸 환영합니다! ]");
                         System.out.println("[ 명령어 ]");
-                        System.out.println("[ '/e': 추방, '/w': 귓속말, '/q': 나가기 ]");
+                        System.out.println("[ '/e userId': 추방 ]");
+                        System.out.println("[ '/w userId message': 귓속말 ]");
+                        System.out.println("[ '/q': 나가기 ]");
+
                         showUserList(message.getPayload());
                         break;
 
@@ -63,18 +68,17 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
 
                     case "WR":
                         System.out.println("[ 당신은 채팅방에서 추방되었습니다. ]");
-                        this.interrupt();
-                        break;
+                        is.close();
+                        socket.shutdownInput();
+                        socket.shutdownOutput();
+                        socket.close();
+                        return;
 
                     case "WA":
                         System.out.println("[ " + message.getId() + "님이 채팅방에서 추방되었습니다. ]");
                 }
-
-                if (isInterrupted()) break;
             }
         } catch (SocketException e) {
-//            throw new TcpServerException(ErrorCode.SERVER_SOCKET_FAIL);
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -82,6 +86,7 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
 
     private void showUserList(String payload) throws IOException {
         System.out.println("[ 유저 리스트 ]");
+
         for (String user: payload.split(",")) {
             String id = user.substring(0, 4);
             String name = user.substring(4);

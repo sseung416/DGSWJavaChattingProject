@@ -1,4 +1,4 @@
-package test;
+package utils;
 
 public class TcpServerException extends RuntimeException {
     private ErrorCode errorCode;

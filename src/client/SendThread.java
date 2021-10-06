@@ -2,8 +2,9 @@ package client;
 
 import dto.Message;
 import dto.MySocket;
-import test.ErrorCode;
-import test.TcpServerException;
+import dto.Users;
+import utils.ErrorCode;
+import utils.TcpServerException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -14,7 +15,8 @@ import java.util.regex.Pattern;
 public class SendThread extends Thread { // 서버에 메세지 보냄
     private MySocket socket;
     private Scanner sc;
-    OutputStream os;
+
+    private OutputStream os;
 
     public SendThread(Socket socket) throws IOException {
         this.socket = new MySocket();
@@ -32,13 +34,16 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
             Message message = null;
 
             while (!(line = sc.nextLine()).equals("")) {
-                // 0: 명령어, 1: 아이디, 2: 메세지
-                String[] command = line.split(" ");
+                if (isInterrupted())
+                    return;
 
-                if (line.charAt(0) == '/' && !isCorrectCommand(command)) {
-                    System.out.println("[ 잘못된 명령어입니다. ]");
+                if (!Pattern.matches("^[a-zA-a0-9~!@#$%^&*()_+`=,.<>/?']*$", line)) {
+                    System.out.println("[ 한글은 입력 불가능합니다. ]");
                     continue;
                 }
+
+                // 0: 명령어, 1: 아이디, 2: 메세지
+                String[] command = line.split(" ");
 
                 switch (command[0]) {
                     case "/e":
@@ -46,38 +51,42 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
                             System.out.println("[ 잘못된 아이디 형식입니다. ]");
                             break;
                         }
+
                         message = new Message("WD", command[1]);
                         break;
+
                     case "/w":
                         if (!isId(command[1])) {
                             System.out.println("[ 잘못된 아이디 형식입니다. ]");
                             break;
+                        } else if (!isCorrectCommand(command)) {
+                            System.out.println("[ 잘못된 명령어 입니다. ]");
+                            break;
                         }
+
                         message = new Message("SM", command[1] + command[2]);
                         break;
+
                     case "/q":
                         System.out.println("[ 챗팅을 종료합니다. ]");
-                        this.interrupt();
-                        break;
+                        os.close();
+                        socket.shutdownInput();
+                        socket.shutdownOutput();
+                        socket.close();
+                        return;
+
                     default:
                         message = new Message("GM", line);
                 }
 
-                if (isInterrupted()) {
-                    break;
-                }
-
                 if (message != null) {
                     os.write(message.getMessage());
+                    os.flush();
                 }
-                os.flush();
             }
         } catch (SocketException e) {
-            e.printStackTrace();
-//            throw new TcpServerException(ErrorCode.SERVER_SOCKET_FAIL);
         } catch (IOException e) {
-//            throw new TcpServerException(ErrorCode.MESSAGE_SEND_FAIL);
-            e.printStackTrace();
+            throw new TcpServerException(ErrorCode.MESSAGE_SEND_FAIL);
         }
     }
 
@@ -123,7 +132,7 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
         while (true) {
             System.out.print("이름: ");
             name = sc.nextLine();
-            boolean it = !Pattern.matches("^[0-9a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣]*$", name);
+            boolean it = !Pattern.matches("^[0-9a-zA-Z]*$", name);
             if (it) {
                 System.out.println("[ 이름에 특수문자는 들어갈 수 없습니다. ]");
                 continue;
@@ -138,5 +147,7 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
         return name;
     }
 
-
+    public void stopThread() {
+        super.interrupt();
+    }
 }

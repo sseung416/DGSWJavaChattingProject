@@ -3,26 +3,32 @@ package server;
 import dto.Message;
 import dto.MySocket;
 import dto.Users;
+import utils.ErrorCode;
+import utils.TcpServerException;
+
 import java.io.*;
+import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 
-public class TestServer extends Thread {
+public class TcpServer extends Thread {
     static ServerSocket serverSocket;
     MySocket socket;
 
     InputStream is;
     OutputStream os;
 
-    Message message;
+    Users users;
 
-    public TestServer(Socket socket) throws IOException {
+    public TcpServer(Socket socket) throws IOException {
         this.socket = new MySocket();
         this.socket.setSocket(socket);
 
         is = socket.getInputStream();
         os = socket.getOutputStream();
+
+        users = new Users();
     }
 
     @Override
@@ -31,7 +37,7 @@ public class TestServer extends Thread {
             byte[] buffer = new byte[Message.BUFFER_SIZE];
 
             while (is.read(buffer) > 0) {
-                message = new Message(buffer);
+                Message message = new Message(buffer);
 
                 switch (message.getHead()) {
                     case "ID":
@@ -40,7 +46,8 @@ public class TestServer extends Thread {
 
                     case "GM":
                         Message msg = new Message("GR", socket.getId() + message.getPayload());
-                        sendEveryone(msg.getMessage());
+
+                        sendEveryone(msg.getMessage(), false);
                         break;
 
                     case "SM":
@@ -53,18 +60,20 @@ public class TestServer extends Thread {
                 }
             }
         } catch (SocketException e){
+            System.out.println("socketException");
             exit();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void sendEveryone(byte[] msg) throws IOException {
-        for (MySocket socket : Users.getInstance().getAllUser().values()) {
-            if (socket.getId().equals(this.socket.getId()))
+    private void sendEveryone(byte[] msg, boolean sendMe) throws IOException {
+        for (MySocket socket : users.getAllUser().values()) {
+            if (!sendMe && socket.getId().equals(this.socket.getId()))
                 continue;
 
             os = socket.getSocket().getOutputStream();
+
             os.write(msg);
             os.flush();
         }
@@ -75,16 +84,17 @@ public class TestServer extends Thread {
         String name = payload.substring(4);
         boolean isUR = false;
 
+        Message message;
         if (isDuplicate(id)) {
             message = new Message("DR", "");
         } else {
-            if (socket.isAdmin()) {
+            if (users.getAllUser() != null) {
                 socket.setAdmin();
             }
             socket.setId(id);
             socket.setName(name);
 
-            Users.getInstance().putUser(id, socket);
+            users.putUser(id, socket);
 
             message = new Message("UR", getUsers());
             isUR = true;
@@ -93,9 +103,10 @@ public class TestServer extends Thread {
         os.write(message.getMessage());
         os.flush();
 
-        if (isUR) {
+        // 중복된 사용자라면 JR 메세지를 보내지 않음
+        if(isUR) {
             Message msg = new Message("JR", socket.toString());
-            sendEveryone(msg.getMessage());
+            sendEveryone(msg.getMessage(), false);
         }
     }
 
@@ -103,10 +114,10 @@ public class TestServer extends Thread {
         try {
             System.out.println(socket.getId() + "의 접속이 끊겼습니다.");
 
-            Users.getInstance().removeUser(socket.getId());
+            users.removeUser(socket.getId());
 
             Message message = new Message("DC", socket.getId());
-            sendEveryone(message.getMessage());
+            sendEveryone(message.getMessage(), false);
 
             socket.close();
             is.close();
@@ -117,10 +128,18 @@ public class TestServer extends Thread {
     }
 
     private void deport(String payload) throws IOException {
-        Message message = new Message("WD", payload);
-        sendEveryone(message.getMessage());
+        Message message;
 
-        Users.getInstance().removeUser(payload);
+        // 지목된 클라이언트 추방
+        message = new Message("WR", "");
+        OutputStream os = users.getUser(payload).getSocket().getOutputStream();
+        os.write(message.getMessage());
+
+        // 지목되지 않은 클라이언트에게 추방 메시지 전달
+        message = new Message("WA", payload);
+        sendEveryone(message.getMessage(), true);
+
+        users.removeUser(payload);
     }
 
     private void whisper(String payload) throws IOException {
@@ -129,26 +148,26 @@ public class TestServer extends Thread {
 
         Message message = new Message("SR", srPayload);
 
-        if (Users.getInstance().getUser(receiveId) != null) {
-            os = Users.getInstance().getUser(receiveId).getSocket().getOutputStream();
+        if (users.getUser(receiveId) != null) {
+            os = users.getUser(receiveId).getSocket().getOutputStream();
             os.write(message.getMessage());
             os.flush();
         }
     }
 
     private String getUsers() {
-        String users = "";
+        StringBuilder users = new StringBuilder();
 
-        for (MySocket socket : Users.getInstance().getAllUser().values()) {
-            users += socket.toString() + ",";
+        for (MySocket socket : TcpServer.this.users.getAllUser().values()) {
+            users.append(socket.toString()).append(",");
         }
-        users.substring(0, users.length()-2);
+        users.substring(0, users.length() - 2);
 
-        return users;
+        return users.toString();
     }
 
     private boolean isDuplicate(String id) {
-        return Users.getInstance().getAllUser().containsKey(id);
+        return users.getAllUser().containsKey(id);
     }
 
     public static void main(String[] args) {
@@ -158,9 +177,11 @@ public class TestServer extends Thread {
 
             while (true) {
                 Socket socket = serverSocket.accept();
-                TestServer thread = new TestServer(socket);
+                TcpServer thread = new TcpServer(socket);
                 thread.start();
             }
+        } catch (BindException e) {
+            throw new TcpServerException(ErrorCode.PORT_ALREADY_OCCUPIED);
         } catch (IOException e) {
             e.printStackTrace();
         }
