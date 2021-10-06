@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 // 메세지 관련 클래스
 public class Message {
     public final static int PORT = 1100;
-    public final static int BUFFER_SIZE = 2048;
+    public final static int BUFFER_SIZE = 9995;
 
     private byte[] message;
 
@@ -54,7 +54,4 @@ public class Message {
         return getPayload().substring(4);
     }
 
-//    public String sibalHangeul() {
-//
-//    }
 }

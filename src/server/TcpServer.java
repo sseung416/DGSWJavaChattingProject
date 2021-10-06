@@ -47,7 +47,6 @@ public class TcpServer extends Thread {
 
                     case "GM":
                         Message msg = new Message("GR", socket.getId() + message.getPayload());
-
                         sendEveryone(msg.getMessage(), false);
                         break;
 
@@ -95,7 +94,7 @@ public class TcpServer extends Thread {
         if (isDuplicate(id)) {
             message = new Message("DR", "");
         } else {
-            if (users.getAllUser() != null) {
+            if (users.getAllUser().size() == 0) {
                 socket.setAdmin();
             }
             socket.setId(id);
@@ -133,6 +132,10 @@ public class TcpServer extends Thread {
     }
 
     private void deport(String payload) throws IOException {
+        if (!socket.isAdmin()) {
+            return;
+        }
+
         Message message;
 
         // 지목된 클라이언트 추방

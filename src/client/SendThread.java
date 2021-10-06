@@ -34,6 +34,11 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
             Message message = null;
 
             while (!(line = sc.nextLine()).equals("")) {
+                if (line.length() >= Message.BUFFER_SIZE) {
+                    System.out.println("[ 9999자 이상은 입력하실 수 없습니다. ]");
+                    continue;
+                }
+
                 // 0: 명령어, 1: 아이디, 2: 메세지
                 String[] command = line.split(" ");
 
@@ -65,8 +70,6 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
                     case "/q":
                         System.out.println("[ 챗팅을 종료합니다. ]");
                         os.close();
-//                        socket.shutdownInput();
-//                        socket.shutdownOutput();
                         socket.close();
                         return;
 
@@ -79,7 +82,6 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
                 os.flush();
             }
         } catch (SocketException e) {
-            System.out.println("SendThread: SocketException");
         } catch (IOException e) {
             throw new TcpServerException(ErrorCode.MESSAGE_SEND_FAIL);
         }
