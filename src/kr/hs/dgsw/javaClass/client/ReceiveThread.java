@@ -2,6 +2,7 @@ package kr.hs.dgsw.javaClass.client;
 
 import kr.hs.dgsw.javaClass.data.Message;
 import kr.hs.dgsw.javaClass.data.MySocket;
+import kr.hs.dgsw.javaClass.utils.SystemMessage;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +38,7 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
                 switch (message.getHead()) {
                     case "UR":
                         System.out.println();
-                        System.out.println("[ 채팅방에 오신 걸 환영합니다! ]");
+                        print(SystemMessage.WELCOME_CHATTING.getMessage());
                         System.out.println("[ 명령어 ]");
                         System.out.println("[ '/e userId': 추방 ]");
                         System.out.println("[ '/w userId message': 귓속말 ]");
@@ -51,7 +52,7 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
                         break;
 
                     case "DR":
-                        System.out.println("[ 중복된 아이디이므로, 접속을 중단합니다. ]");
+                        print(SystemMessage.DUPLICATE_ID.getMessage());
                         this.interrupt();
                         break;
 
@@ -68,7 +69,7 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
                         break;
 
                     case "WR":
-                        System.out.println("[ 당신은 채팅방에서 추방되었습니다. ]");
+                        print(SystemMessage.YOU_EXILE.getMessage());
                         is.close();
                         socket.close();
                         return;
@@ -93,5 +94,9 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
             System.out.printf("%s (%s)%n", id, name);
         }
         System.out.println();
+    }
+
+    private void print(String str) {
+        System.out.println("[ " + str + " ]");
     }
 }

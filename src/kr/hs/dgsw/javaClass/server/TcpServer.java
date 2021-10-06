@@ -3,8 +3,7 @@ package kr.hs.dgsw.javaClass.server;
 import kr.hs.dgsw.javaClass.data.Message;
 import kr.hs.dgsw.javaClass.data.MySocket;
 import kr.hs.dgsw.javaClass.data.Users;
-import kr.hs.dgsw.javaClass.utils.ErrorCode;
-import kr.hs.dgsw.javaClass.utils.TcpServerException;
+import kr.hs.dgsw.javaClass.utils.*;
 
 import java.io.*;
 import java.net.BindException;
@@ -20,6 +19,7 @@ public class TcpServer extends Thread {
     OutputStream os;
 
     Users users;
+    CheckValid checkValid;
 
     public TcpServer(Socket socket) throws IOException {
         this.socket = new MySocket();
@@ -29,6 +29,7 @@ public class TcpServer extends Thread {
         os = socket.getOutputStream();
 
         users = new Users();
+        checkValid = new CheckValid();
     }
 
     @Override
@@ -45,7 +46,7 @@ public class TcpServer extends Thread {
                         break;
 
                     case "GM":
-                        Message msg = new Message("GR", socket.getId() + message.getPayload());
+                        Message msg = new Message(Payload.GR.getHead(), socket.getId() + message.getPayload());
                         sendEveryone(msg.getMessage(), false);
                         break;
 
@@ -70,8 +71,6 @@ public class TcpServer extends Thread {
         try {
             for (MySocket socket : users.getAllUser().values()) {
                 err = socket;
-//                if (!sendMe && socket.getId().equals(this.socket.getId()))
-//                    continue;
 
                 os = socket.getSocket().getOutputStream();
 
@@ -90,20 +89,19 @@ public class TcpServer extends Thread {
         boolean isUR = false;
 
         Message message;
-        if (isDuplicate(id)) {
-            message = new Message("DR", "");
+        if (checkValid.isDuplicate(id)) {
+            message = new Message(Payload.DR.getHead(), "");
         } else {
+            // 방장 설정
             if (users.getAllUser().size() == 0) {
                 socket.setAdmin();
             }
             socket.setId(id);
             socket.setName(name);
 
-            System.out.println(socket.getId() +": " +socket.getName());
-
             users.putUser(id, socket);
 
-            message = new Message("UR", getUsers());
+            message = new Message(Payload.UR.getHead(), getUsers());
             isUR = true;
         }
 
@@ -112,7 +110,7 @@ public class TcpServer extends Thread {
 
         // 중복된 사용자라면(보내는 메세지가 DR이라면) JR 메세지를 보내지 않음
         if(isUR) {
-            Message msg = new Message("JR", socket.toString());
+            Message msg = new Message(Payload.JR.getHead(), socket.toString());
             sendEveryone(msg.getMessage(), false);
         }
     }
@@ -121,7 +119,7 @@ public class TcpServer extends Thread {
         try {
             users.removeUser(socket.getId());
 
-            Message message = new Message("DC", socket.getId());
+            Message message = new Message(Payload.DC.getHead(), socket.getId());
             sendEveryone(message.getMessage(), false);
 
             socket.close();
@@ -138,8 +136,8 @@ public class TcpServer extends Thread {
         Message message;
 
         // 지목된 클라이언트 추방
-        message = new Message("WR", "");
-        if (users.getUser(payload) == null) {
+        message = new Message(Payload.WR.getHead(), "");
+        if (checkValid.isNull(users.getUser(payload))) {
             return;
         }
 
@@ -147,7 +145,7 @@ public class TcpServer extends Thread {
         os.write(message.getMessage());
 
         // 지목되지 않은 클라이언트에게 추방 메시지 전달
-        message = new Message("WA", payload);
+        message = new Message(Payload.WA.getHead(), payload);
         sendEveryone(message.getMessage(), true);
 
         users.removeUser(payload);
@@ -157,9 +155,9 @@ public class TcpServer extends Thread {
         String receiveId = payload.substring(0, 4);
         String srPayload = socket.getId() + payload.substring(4);
 
-        Message message = new Message("SR", srPayload);
+        Message message = new Message(Payload.SR.getHead(), srPayload);
 
-        if (users.getUser(receiveId) != null) {
+        if (!checkValid.isNull(users.getUser(receiveId))) {
             os = users.getUser(receiveId).getSocket().getOutputStream();
             os.write(message.getMessage());
             os.flush();
@@ -170,7 +168,7 @@ public class TcpServer extends Thread {
     private String getUsers() {
         StringBuilder users = new StringBuilder();
 
-        for (MySocket socket : TcpServer.this.users.getAllUser().values()) {
+        for (MySocket socket : this.users.getAllUser().values()) {
             users.append(socket.toString()).append(",");
         }
         users.substring(0, users.length() - 2);
@@ -178,14 +176,10 @@ public class TcpServer extends Thread {
         return users.toString();
     }
 
-    private boolean isDuplicate(String id) {
-        return users.getAllUser().containsKey(id);
-    }
-
     public static void main(String[] args) {
         try {
             serverSocket = new ServerSocket(Message.PORT);
-            System.out.println("서버가 열렸습니다.");
+            System.out.println(SystemMessage.OPEN_SERVER.getMessage());
 
             while (true) {
                 Socket socket = serverSocket.accept();
