@@ -1,10 +1,9 @@
-package client;
+package kr.hs.dgsw.javaClass.client;
 
-import dto.Message;
-import dto.MySocket;
-import dto.Users;
-import utils.ErrorCode;
-import utils.TcpServerException;
+import kr.hs.dgsw.javaClass.data.Message;
+import kr.hs.dgsw.javaClass.data.MySocket;
+import kr.hs.dgsw.javaClass.utils.ErrorCode;
+import kr.hs.dgsw.javaClass.utils.TcpServerException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;

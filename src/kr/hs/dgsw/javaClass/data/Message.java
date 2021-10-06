@@ -1,4 +1,4 @@
-package dto;
+package kr.hs.dgsw.javaClass.data;
 
 import java.nio.charset.StandardCharsets;
 

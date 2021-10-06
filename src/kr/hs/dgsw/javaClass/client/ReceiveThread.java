@@ -1,7 +1,7 @@
-package client;
+package kr.hs.dgsw.javaClass.client;
 
-import dto.Message;
-import dto.MySocket;
+import kr.hs.dgsw.javaClass.data.Message;
+import kr.hs.dgsw.javaClass.data.MySocket;
 
 import java.io.IOException;
 import java.io.InputStream;

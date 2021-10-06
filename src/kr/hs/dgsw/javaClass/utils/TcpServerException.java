@@ -1,4 +1,4 @@
-package utils;
+package kr.hs.dgsw.javaClass.utils;
 
 public class TcpServerException extends RuntimeException {
     private ErrorCode errorCode;
