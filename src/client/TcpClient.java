@@ -23,22 +23,26 @@ public class TcpClient {
 
             ReceiveThread t1 = new ReceiveThread(client.socket);
             SendThread t2 = new SendThread(client.socket);
+            t1.setName("ClientReceiveThread");
+            t2.setName("ClientSendThread");
+
+            t1.setDaemon(true);
+            t2.setDaemon(true);
 
             t1.start();
             t2.start();
 
-            t1.join();
-            if (!t1.isAlive()) {
-                t2.interrupt();
+            while (true) {
+                if (!t1.isAlive() || !t2.isAlive()) {
+                    break;
+                }
             }
-            t2.join();
 
             client.socket.close();
         } catch (SocketException e) {
             throw new TcpServerException(ErrorCode.SERVER_SOCKET_FAIL);
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (InterruptedException e) {
         }
     }
 

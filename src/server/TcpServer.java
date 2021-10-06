@@ -11,6 +11,7 @@ import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.time.format.TextStyle;
 
 public class TcpServer extends Thread {
     static ServerSocket serverSocket;
@@ -60,22 +61,28 @@ public class TcpServer extends Thread {
                 }
             }
         } catch (SocketException e){
-            System.out.println("socketException");
-            exit();
+            exit(socket);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     private void sendEveryone(byte[] msg, boolean sendMe) throws IOException {
-        for (MySocket socket : users.getAllUser().values()) {
-            if (!sendMe && socket.getId().equals(this.socket.getId()))
-                continue;
+        MySocket err = null;
+        try {
+            for (MySocket socket : users.getAllUser().values()) {
+                err = socket;
+//                if (!sendMe && socket.getId().equals(this.socket.getId()))
+//                    continue;
 
-            os = socket.getSocket().getOutputStream();
+                os = socket.getSocket().getOutputStream();
 
-            os.write(msg);
-            os.flush();
+                os.write(msg);
+                os.flush();
+            }
+        } catch (SocketException e) {
+            if (!err.equals(socket))
+                exit(err);
         }
     }
 
@@ -103,25 +110,23 @@ public class TcpServer extends Thread {
         os.write(message.getMessage());
         os.flush();
 
-        // 중복된 사용자라면 JR 메세지를 보내지 않음
+        // 중복된 사용자라면(보내는 메세지가 DR이라면) JR 메세지를 보내지 않음
         if(isUR) {
             Message msg = new Message("JR", socket.toString());
             sendEveryone(msg.getMessage(), false);
         }
     }
 
-    private void exit() {
+    private void exit(MySocket socket) {
         try {
-            System.out.println(socket.getId() + "의 접속이 끊겼습니다.");
-
             users.removeUser(socket.getId());
 
             Message message = new Message("DC", socket.getId());
             sendEveryone(message.getMessage(), false);
 
             socket.close();
-            is.close();
-            os.close();
+//            is.close();
+//            os.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -155,6 +160,7 @@ public class TcpServer extends Thread {
         }
     }
 
+    // UR로 보낼 메세지를 반환하는 메서드 (id이름,id이름,....)
     private String getUsers() {
         StringBuilder users = new StringBuilder();
 

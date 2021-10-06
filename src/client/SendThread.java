@@ -34,18 +34,11 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
             Message message = null;
 
             while (!(line = sc.nextLine()).equals("")) {
-                if (isInterrupted())
-                    return;
-
-                if (!Pattern.matches("^[a-zA-a0-9~!@#$%^&*()_+`=,.<>/?']*$", line)) {
-                    System.out.println("[ 한글은 입력 불가능합니다. ]");
-                    continue;
-                }
-
                 // 0: 명령어, 1: 아이디, 2: 메세지
                 String[] command = line.split(" ");
 
                 switch (command[0]) {
+                    // 추방
                     case "/e":
                         if (!isId(command[1])) {
                             System.out.println("[ 잘못된 아이디 형식입니다. ]");
@@ -55,6 +48,7 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
                         message = new Message("WD", command[1]);
                         break;
 
+                    // 귓속말
                     case "/w":
                         if (!isId(command[1])) {
                             System.out.println("[ 잘못된 아이디 형식입니다. ]");
@@ -67,37 +61,41 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
                         message = new Message("SM", command[1] + command[2]);
                         break;
 
+                    // 챗팅 종료
                     case "/q":
                         System.out.println("[ 챗팅을 종료합니다. ]");
                         os.close();
-                        socket.shutdownInput();
-                        socket.shutdownOutput();
+//                        socket.shutdownInput();
+//                        socket.shutdownOutput();
                         socket.close();
                         return;
 
+                    // 일반 채팅
                     default:
                         message = new Message("GM", line);
                 }
 
-                if (message != null) {
-                    os.write(message.getMessage());
-                    os.flush();
-                }
+                os.write(message.getMessage());
+                os.flush();
             }
         } catch (SocketException e) {
+            System.out.println("SendThread: SocketException");
         } catch (IOException e) {
             throw new TcpServerException(ErrorCode.MESSAGE_SEND_FAIL);
         }
     }
 
+    // 아이디가 4자리의 숫자인지 검사
     private boolean isId(String s) {
         return Pattern.matches("\\d{4}", s);
     }
 
+    // 제대로된 명령어인지 검사
     private boolean isCorrectCommand(String[] command) {
         return command.length == 3;
     }
 
+    // 회원가입
     private void signIn() throws IOException {
         System.out.println("[ 아이디와 이름을 입력해주세요. ]");
         socket.setId(getCorrectId());
@@ -109,6 +107,7 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
         os.flush();
     }
 
+    // 올바른 아이디 형식(4자리 숫자)을 입력할 때까지 아이디 값을 받음
     private String getCorrectId() {
         String id;
 
@@ -116,7 +115,7 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
             System.out.print("id: ");
             id = sc.nextLine();
 
-            if (!Pattern.matches("\\d{4}", id)) {
+            if (!isId(id)) {
                 System.out.println("[ 4자리의 숫자를 입력해주세요. ]");
                 continue;
             }
@@ -126,13 +125,14 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
         return id;
     }
 
+    // 올바른 이름 형식을 입력할 때까지 이름 값을 받음
     private String getCorrectName() {
         String name;
 
         while (true) {
             System.out.print("이름: ");
             name = sc.nextLine();
-            boolean it = !Pattern.matches("^[0-9a-zA-Z]*$", name);
+            boolean it = !Pattern.matches("^[0-9a-zA-Zㄱ-ㅎ가-힣]*$", name);
             if (it) {
                 System.out.println("[ 이름에 특수문자는 들어갈 수 없습니다. ]");
                 continue;
@@ -145,9 +145,5 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
         }
 
         return name;
-    }
-
-    public void stopThread() {
-        super.interrupt();
     }
 }

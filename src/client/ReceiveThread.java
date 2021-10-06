@@ -28,11 +28,11 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
             Message message;
 
             while (is.read(buffer) > 0) {
-                message = new Message(buffer);
+                if (isInterrupted()) {
+                    return;
+                }
 
-//                byte[] s = new byte[message.getLength()];
-//                is.read(s, 0, message.getLength());
-//                System.out.println(new String(s, 0, message.getLength()));
+                message = new Message(buffer);
 
                 switch (message.getHead()) {
                     case "UR":
@@ -69,8 +69,6 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
                     case "WR":
                         System.out.println("[ 당신은 채팅방에서 추방되었습니다. ]");
                         is.close();
-                        socket.shutdownInput();
-                        socket.shutdownOutput();
                         socket.close();
                         return;
 
