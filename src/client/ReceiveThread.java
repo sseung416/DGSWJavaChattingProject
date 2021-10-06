@@ -36,6 +36,7 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
 
                 switch (message.getHead()) {
                     case "UR":
+                        System.out.println();
                         System.out.println("[ 채팅방에 오신 걸 환영합니다! ]");
                         System.out.println("[ 명령어 ]");
                         System.out.println("[ '/e userId': 추방 ]");
@@ -55,11 +56,11 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
                         break;
 
                     case "GR":
-                        System.out.println(message.getId() + ": " + message.getMsg());
+                        System.out.println(message.getId() + "> " + message.getMsg());
                         break;
 
                     case "SR":
-                        System.out.println("(귓속말 | " + message.getId() + ": " + message.getMsg() + ")");
+                        System.out.println("(귓속말 | " + message.getId() + "> " + message.getMsg() + ")");
                         break;
 
                     case "DC":
@@ -91,5 +92,6 @@ public class ReceiveThread extends Thread { // 서버에서 보낸 메세지 읽
 
             System.out.printf("%s (%s)%n", id, name);
         }
+        System.out.println();
     }
 }

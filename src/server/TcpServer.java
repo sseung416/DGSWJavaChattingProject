@@ -100,6 +100,8 @@ public class TcpServer extends Thread {
             socket.setId(id);
             socket.setName(name);
 
+            System.out.println(socket.getId() +": " +socket.getName());
+
             users.putUser(id, socket);
 
             message = new Message("UR", getUsers());
@@ -124,8 +126,6 @@ public class TcpServer extends Thread {
             sendEveryone(message.getMessage(), false);
 
             socket.close();
-//            is.close();
-//            os.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -140,6 +140,10 @@ public class TcpServer extends Thread {
 
         // 지목된 클라이언트 추방
         message = new Message("WR", "");
+        if (users.getUser(payload) == null) {
+            return;
+        }
+
         OutputStream os = users.getUser(payload).getSocket().getOutputStream();
         os.write(message.getMessage());
 

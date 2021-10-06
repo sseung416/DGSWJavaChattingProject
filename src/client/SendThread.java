@@ -31,11 +31,14 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
             signIn();
 
             String line;
-            Message message = null;
+            while ((line = sc.nextLine()) != null) {
+                Message message = null;
 
-            while (!(line = sc.nextLine()).equals("")) {
                 if (line.length() >= Message.BUFFER_SIZE) {
                     System.out.println("[ 9999자 이상은 입력하실 수 없습니다. ]");
+                    continue;
+                } else if (line.trim().equals("")) {
+                    System.out.println("[ 메세지를 입력해주세요. ]");
                     continue;
                 }
 
@@ -78,8 +81,10 @@ public class SendThread extends Thread { // 서버에 메세지 보냄
                         message = new Message("GM", line);
                 }
 
-                os.write(message.getMessage());
-                os.flush();
+                if (message != null) {
+                    os.write(message.getMessage());
+                    os.flush();
+                }
             }
         } catch (SocketException e) {
         } catch (IOException e) {

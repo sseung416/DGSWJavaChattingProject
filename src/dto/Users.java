@@ -23,6 +23,6 @@ public class Users {
     }
 
     public synchronized void removeUser(String id) {
-        System.out.println("remove: "+userList.remove(id));
+        userList.remove(id);
     }
 }
